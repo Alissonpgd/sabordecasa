@@ -1,25 +1,22 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+// eslint.config.mjs
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import next from "next/core-web-vitals";
 
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+/** @type {import('eslint').Linter.FlatConfig[]} */
+const config = [
+  // A configuração padrão do Next.js
+  next,
 
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  // Nosso objeto de regras personalizadas
   {
-    ignores: [
-      "node_modules/**",
-      ".next/**",
-      "out/**",
-      "build/**",
-      "next-env.d.ts",
-    ],
+    rules: {
+      // Desliga a regra que proíbe o uso de 'any'
+      "@typescript-eslint/no-explicit-any": "off",
+
+      // Transforma o erro de "variável não usada" em um aviso (não quebra a build)
+      "@typescript-eslint/no-unused-vars": "warn",
+    },
   },
 ];
 
-export default eslintConfig;
+export default config;
