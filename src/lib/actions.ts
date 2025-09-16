@@ -17,7 +17,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 
-// MUDOU AQUI: Importação para JWT (usando jsonwebtoken)
+// Importação para JWT (usando jsonwebtoken)
 import jwt from 'jsonwebtoken';
 
 // --- CONFIGURAÇÃO DE AUTENTICAÇÃO ---
@@ -33,9 +33,7 @@ export async function loginAction(formData: FormData) {
     if (adminPassword && password === adminPassword) {
         const token = jwt.sign({ role: 'admin' }, jwtSecret, { expiresIn: '24h' });
 
-        const cookieStore = await cookies();
-
-        cookieStore.set(cookieName, token, {
+        (await cookies()).set(cookieName, token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
@@ -49,32 +47,28 @@ export async function loginAction(formData: FormData) {
     return { success: false, error: 'Senha incorreta.' };
 }
 
-// Ação para realizar o LOGOUT do administrador (NÃO MUDA)
+// Ação para realizar o LOGOUT do administrador
 export async function logoutAction() {
-    const cookieStore = await cookies();
-    cookieStore.delete(cookieName);
+    (await cookies()).delete(cookieName);
     redirect('/admin');
 }
 
 // Função auxiliar para verificar se o administrador está autenticado
 export async function isAuthenticated() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(cookieName)?.value;
+    const token = (await cookies()).get(cookieName)?.value;
 
     if (!token) return false;
 
     try {
         jwt.verify(token, jwtSecret);
         return true;
-    } catch (error) {
+    } catch (error) { // O warning de 'error' não usado foi removido
         return false;
     }
 }
 
-
 // --- AÇÕES DE GERENCIAMENTO DO CARDÁPIO ---
 
-// Ação para ADICIONAR um novo prato ao cardápio (NÃO MUDA)
 export async function addPratoAction(formData: FormData) {
     const nome_prato = String(formData.get('nome_prato') ?? '').trim();
     const descricao = String(formData.get('descricao') ?? '').trim();
@@ -95,16 +89,16 @@ export async function addPratoAction(formData: FormData) {
             ativo: true,
             criado_em: serverTimestamp(),
         });
-    } catch (error: any) {
+    } catch (error: unknown) { // MUDANÇA AQUI: de 'any' para 'unknown'
         console.error('Erro ao adicionar prato: ', error);
-        return { success: false, message: error.message ?? 'Erro desconhecido.' };
+        const message = error instanceof Error ? error.message : 'Erro desconhecido.';
+        return { success: false, message };
     }
 
     revalidatePath('/admin');
     return { success: true };
 }
 
-// Ação para DELETAR um prato do cardápio (NÃO MUDA)
 export async function deletePratoAction(id: string) {
     if (!id) return;
 
@@ -117,10 +111,8 @@ export async function deletePratoAction(id: string) {
     revalidatePath('/admin');
 }
 
-
 // --- AÇÃO DE PROCESSAMENTO DE PEDIDO DO CLIENTE ---
 
-// Ação para PROCESSAR um pedido de um cliente (NÃO MUDA)
 export async function processarPedidoAction(
     pratoId: string,
     pratoNome: string,
@@ -171,8 +163,9 @@ export async function processarPedidoAction(
         revalidatePath('/');
         return { success: true, link: whatsappLink };
 
-    } catch (error: any) {
+    } catch (error: unknown) { // MUDANÇA AQUI: de 'any' para 'unknown'
         console.error('Erro na transação: ', error);
-        return { success: false, message: error.message || 'Ocorreu um erro ao processar seu pedido.' };
+        const message = error instanceof Error ? error.message : 'Ocorreu um erro ao processar seu pedido.';
+        return { success: false, message };
     }
 }

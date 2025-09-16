@@ -1,6 +1,6 @@
 // src/app/admin/page.tsx
 
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, DocumentData } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { addPratoAction, deletePratoAction, isAuthenticated, logoutAction } from '@/lib/actions';
 import LoginForm from './LoginForm'; // Importa nosso formulário de login
@@ -24,10 +24,16 @@ export default async function AdminPage() {
     // Se chegou aqui, o usuário está logado. Buscamos os dados e mostramos o painel.
     const q = query(collection(db, 'cardapio'), orderBy('criado_em', 'desc'));
     const querySnapshot = await getDocs(q);
-    const cardapio: Prato[] = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as Omit<Prato, 'id'>),
-    }));
+    // MUDANÇA SUTIL AQUI para ajudar o TypeScript
+    const cardapio: Prato[] = querySnapshot.docs.map((doc) => {
+        const data = doc.data() as DocumentData; // Dizemos que 'data' é um DocumentData
+        return {
+            id: doc.id,
+            nome_prato: data.nome_prato,
+            qtd_inicial: data.qtd_inicial,
+            qtd_restante: data.qtd_restante,
+        };
+    });
 
     return (
         <div className="container mx-auto p-4 md:p-8 bg-gray-50 min-h-screen">
